@@ -1,0 +1,10 @@
+services:
+  hitsz-qqbot:
+    volumes:
+      # 开发/运维便捷：把宿主机源码挂载进容器，改代码后只需重启容器（无需 rebuild）
+      - ../hitsz_manager/src:/app/src
+      - ../hitsz_manager/bot.py:/app/bot.py
+      # 知识库文本目录：直接在宿主机编辑 txt，然后 /重构知识库
+      - ${QQBOT_RAG_DOCS_DIR_HOST:-../hitsz_manager/data/rag_docs}:/data/rag_docs
+      # 可选：课程数据兜底目录（只读）
+      - ${QQBOT_COURSES_DIR_HOST:-../hitsz_manager/data/courses_seed}:/seed/courses:ro

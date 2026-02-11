@@ -1,0 +1,94 @@
+services:
+  hoa-prserver:
+    build:
+      context: .
+      args:
+        PYTHON_BASE: ${PRSERVER_PYTHON_BASE:-python:3.12-slim}
+        APT_MIRROR: ${PRSERVER_APT_MIRROR:-https://mirrors.aliyun.com/debian}
+        APT_SECURITY_MIRROR: ${PRSERVER_APT_SECURITY_MIRROR:-https://mirrors.aliyun.com/debian-security}
+        PIP_INDEX_URL: ${PRSERVER_PIP_INDEX_URL:-https://mirrors.aliyun.com/pypi/simple}
+        PIP_EXTRA_INDEX_URL: ${PRSERVER_PIP_EXTRA_INDEX_URL:-}
+        PIP_DEFAULT_TIMEOUT: ${PRSERVER_PIP_DEFAULT_TIMEOUT:-1000}
+    ports:
+      - "127.0.0.1:8000:8000"
+    # 2c2g 小机器建议加资源上限；可用环境变量覆盖默认值
+    mem_limit: ${PRSERVER_MEM_LIMIT:-512m}
+    memswap_limit: ${PRSERVER_MEMSWAP_LIMIT:-1536m}
+    cpus: ${PRSERVER_CPUS:-0.5}
+    environment:
+      ORG_NAME: ${ORG_NAME:-HITSZ-OpenAuto}
+      ALLOWED_REPOS: ${ALLOWED_REPOS:-}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      # 统一使用同一份 key，避免同时维护 API_KEY 和 HITSZ_MANAGER_PRSERVER_API_KEY
+      API_KEY: ${HITSZ_MANAGER_PRSERVER_API_KEY:-}
+      FINAL_DIR: ${FINAL_DIR:-/work/final}
+      HOA_PRSERVER_DB: /data/hoa_prserver.sqlite3
+      POLL_INTERVAL_SECONDS: ${POLL_INTERVAL_SECONDS:-3600}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+    volumes:
+      - ${FINAL_DIR_HOST:-../final}:/work/final:ro
+      - prserver-data:/data
+    restart: unless-stopped
+
+  hitsz-qqbot:
+    build:
+      context: ../hitsz_manager
+      args:
+        PYTHON_BASE: ${QQBOT_PYTHON_BASE:-python:3.12-slim}
+        APT_MIRROR: ${QQBOT_APT_MIRROR:-https://mirrors.aliyun.com/debian}
+        APT_SECURITY_MIRROR: ${QQBOT_APT_SECURITY_MIRROR:-https://mirrors.aliyun.com/debian-security}
+        PIP_INDEX_URL: ${QQBOT_PIP_INDEX_URL:-https://mirrors.aliyun.com/pypi/simple}
+        PIP_EXTRA_INDEX_URL: ${QQBOT_PIP_EXTRA_INDEX_URL:-}
+        PIP_DEFAULT_TIMEOUT: ${QQBOT_PIP_DEFAULT_TIMEOUT:-1000}
+    ports:
+      - "127.0.0.1:${HITSZ_QQBOT_HOST_PORT:-8081}:${HITSZ_QQBOT_LISTEN_PORT:-8081}"
+    # 2c2g 小机器建议加资源上限；向量化/embedding 可能吃内存
+    mem_limit: ${QQBOT_MEM_LIMIT:-1400m}
+    memswap_limit: ${QQBOT_MEMSWAP_LIMIT:-6400m}
+    cpus: ${QQBOT_CPUS:-1.5}
+    environment:
+      HOST: 0.0.0.0
+      PORT: ${HITSZ_QQBOT_LISTEN_PORT:-8081}
+      # OneBot V11 反向 WS 鉴权（可选）。如果 NapCat 配了 Token，这里建议同步配置。
+      ONEBOT_V11_ACCESS_TOKEN: ${ONEBOT_V11_ACCESS_TOKEN:-}
+      # 限制线程，防止 sentence-transformers / BLAS 把 CPU/内存打满
+      OMP_NUM_THREADS: ${OMP_NUM_THREADS:-1}
+      MKL_NUM_THREADS: ${MKL_NUM_THREADS:-1}
+      TOKENIZERS_PARALLELISM: ${TOKENIZERS_PARALLELISM:-false}
+      HITSZ_MANAGER_DATA_ROOT: /data
+      # 课程数据兜底目录：当 /data/courses 中缺失时，会从这里补充读取（只读即可）
+      HITSZ_MANAGER_COURSE_FALLBACK_DIR: /seed/courses
+      HITSZ_MANAGER_COURSE_REPO_URL: ${HITSZ_MANAGER_COURSE_REPO_URL:-}
+      HITSZ_MANAGER_COURSE_REPO_DIR: ${HITSZ_MANAGER_COURSE_REPO_DIR:-}
+      HITSZ_MANAGER_PRSERVER_BASE_URL: http://hoa-prserver:8000
+      HITSZ_MANAGER_PRSERVER_API_KEY: ${HITSZ_MANAGER_PRSERVER_API_KEY:-}
+      HITSZ_MANAGER_ALLOWED_USERS: ${HITSZ_MANAGER_ALLOWED_USERS:-}
+      HITSZ_MANAGER_GITHUB_ORG: ${HITSZ_MANAGER_GITHUB_ORG:-HITSZ-OpenAuto}
+      HITSZ_MANAGER_GITHUB_TOKEN: ${HITSZ_MANAGER_GITHUB_TOKEN:-}
+      HITSZ_MANAGER_GIT_SYNC_CONCURRENCY: ${HITSZ_MANAGER_GIT_SYNC_CONCURRENCY:-4}
+      # git: clone/pull 仓库；toml: 仅下载根目录 readme.toml（更快）
+      HITSZ_MANAGER_GIT_SYNC_MODE: ${HITSZ_MANAGER_GIT_SYNC_MODE:-git}
+      # git 模式下可用：浅克隆深度（默认 1；设为 0 全量 clone）
+      HITSZ_MANAGER_GIT_CLONE_DEPTH: ${HITSZ_MANAGER_GIT_CLONE_DEPTH:-1}
+      HITSZ_MANAGER_AI_API_KEY: ${HITSZ_MANAGER_AI_API_KEY:-}
+      HITSZ_MANAGER_AI_BASE_URL: ${HITSZ_MANAGER_AI_BASE_URL:-}
+      HITSZ_MANAGER_AI_MODEL: ${HITSZ_MANAGER_AI_MODEL:-}
+      HITSZ_MANAGER_EMBEDDING_MODEL: ${HITSZ_MANAGER_EMBEDDING_MODEL:-}
+      HITSZ_MANAGER_HF_ENDPOINT: ${HITSZ_MANAGER_HF_ENDPOINT:-}
+    volumes:
+      - qqbot-data:/data
+      # 可选：直接使用本地备份课程数据（只读），避免国内环境 git clone/pull 过慢
+      # 挂载到 /seed/courses，不覆盖 /data/courses（确保 /刷 仍可写可更新）
+      - ${QQBOT_COURSES_DIR_HOST:-../hitsz_manager/data/courses_seed}:/seed/courses:ro
+    depends_on:
+      - hoa-prserver
+    restart: unless-stopped
+
+volumes:
+  prserver-data:
+  qqbot-data:
