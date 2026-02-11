@@ -26,16 +26,19 @@
           <h1 class="text-2xl font-bold">RDME 课程编辑</h1>
           <p class="text-sm text-slate-600">搜索课程 → 加载/编辑 readme.toml（final schema）→ 渲染预览 → 确保 PR（可重复提交更新同一 PR）</p>
         </div>
-        <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto">
-          <div>
-            <label class="text-xs text-slate-600">API Base（可留空，同源）</label>
-            <input id="apiBase" class="w-full md:w-72 px-3 py-2 border rounded" placeholder="例如 http://localhost:8000" />
+        <details class="w-full md:w-auto">
+          <summary class="text-xs text-slate-600 cursor-pointer select-none">高级设置（同源部署一般不需要）</summary>
+          <div class="flex flex-col md:flex-row gap-2 mt-2">
+            <div>
+              <label class="text-xs text-slate-600">API Base（可留空，同源）</label>
+              <input id="apiBase" class="w-full md:w-72 px-3 py-2 border rounded" placeholder="例如 http://localhost:8000" />
+            </div>
+            <div>
+              <label class="text-xs text-slate-600">X-API-Key（如需）</label>
+              <input id="apiKey" class="w-full md:w-72 px-3 py-2 border rounded" placeholder="可留空" />
+            </div>
           </div>
-          <div>
-            <label class="text-xs text-slate-600">X-API-Key（如需）</label>
-            <input id="apiKey" class="w-full md:w-72 px-3 py-2 border rounded" placeholder="可留空" />
-          </div>
-        </div>
+        </details>
       </header>
 
       <main class="grid grid-cols-1 lg:grid-cols-12 gap-4 mt-4">
