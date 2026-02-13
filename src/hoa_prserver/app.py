@@ -584,7 +584,6 @@ async def submit_course(
             github_token=settings.github_token,
             toml_text=req.toml,
             toml_path="readme.toml",
-            readme_path="README.md",
             title=f"chore: update {req.course_code} readme.toml",
             body="Automated PR via hoa-prServer.",
             branch_prefix="bot/rdme",
@@ -663,7 +662,6 @@ async def ensure_pr(
             toml_text=toml_text,
             branch=stable_branch,
             toml_path="readme.toml",
-            readme_path="README.md",
             title=f"chore: update {effective_course_code} readme.toml",
             body="Automated PR via hoa-prServer (ensure).",
         )
@@ -739,7 +737,6 @@ async def submit_ops(
             github_token=settings.github_token,
             toml_text=patched,
             toml_path="readme.toml",
-            readme_path="README.md",
             title=f"chore: update {effective_course_code} readme.toml",
             body="Automated PR via hoa-prServer (ops).",
             branch_prefix="bot/rdme",

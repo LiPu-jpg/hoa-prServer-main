@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .github_client import GitHubClient
-from .render import RenderError, render_readme_from_toml
+
 
 
 @dataclass(frozen=True)
@@ -62,7 +62,6 @@ async def create_pr_from_toml(
     github_token: str,
     toml_text: str,
     toml_path: str = "readme.toml",
-    readme_path: str = "README.md",
     title: str = "chore: update readme.toml",
     body: str = "Automated change via hoa-prServer.",
     branch_prefix: str = "bot/rdme",
@@ -84,17 +83,10 @@ async def create_pr_from_toml(
         (repo_dir / toml_path).write_text(toml_text, encoding="utf-8", newline="\n")
         _maybe_taplo_fmt(repo_dir / toml_path)
 
-        try:
-            readme_md = render_readme_from_toml((repo_dir / toml_path).read_text(encoding="utf-8"))
-        except RenderError as e:
-            raise PRFlowError(str(e))
-
-        (repo_dir / readme_path).write_text(readme_md, encoding="utf-8", newline="\n")
-
         _run(["git", "config", "user.name", "hoa-prServer"], cwd=repo_dir)
         _run(["git", "config", "user.email", "actions@github.com"], cwd=repo_dir)
 
-        _run(["git", "add", toml_path, readme_path], cwd=repo_dir)
+        _run(["git", "add", toml_path], cwd=repo_dir)
 
         # No-op when nothing changed.
         proc = subprocess.run(["git", "diff", "--staged", "--quiet"], cwd=str(repo_dir))
@@ -127,7 +119,6 @@ async def ensure_pr_from_toml(
     toml_text: str,
     branch: str,
     toml_path: str = "readme.toml",
-    readme_path: str = "README.md",
     title: str = "chore: update readme.toml",
     body: str = "Automated change via hoa-prServer.",
 ) -> PRResult:
@@ -151,17 +142,10 @@ async def ensure_pr_from_toml(
         (repo_dir / toml_path).write_text(toml_text, encoding="utf-8", newline="\n")
         _maybe_taplo_fmt(repo_dir / toml_path)
 
-        try:
-            readme_md = render_readme_from_toml((repo_dir / toml_path).read_text(encoding="utf-8"))
-        except RenderError as e:
-            raise PRFlowError(str(e))
-
-        (repo_dir / readme_path).write_text(readme_md, encoding="utf-8", newline="\n")
-
         _run(["git", "config", "user.name", "hoa-prServer"], cwd=repo_dir)
         _run(["git", "config", "user.email", "actions@github.com"], cwd=repo_dir)
 
-        _run(["git", "add", toml_path, readme_path], cwd=repo_dir)
+        _run(["git", "add", toml_path], cwd=repo_dir)
 
         proc = subprocess.run(["git", "diff", "--staged", "--quiet"], cwd=str(repo_dir))
         if proc.returncode == 0:
